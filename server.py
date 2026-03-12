@@ -8,6 +8,7 @@ import uuid
 
 app = FastAPI()
 
+# CORS for Lovable frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,6 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# clips folder
 CLIPS_DIR = "clips"
 os.makedirs(CLIPS_DIR, exist_ok=True)
 
@@ -36,7 +38,6 @@ class VideoRequest(BaseModel):
 def generate_clips(data: VideoRequest):
 
     try:
-
         video_url = data.url or data.youtube_url
 
         if not video_url:
@@ -45,9 +46,9 @@ def generate_clips(data: VideoRequest):
         video_id = str(uuid.uuid4())
         video_file = f"{video_id}.mp4"
 
-        # download video
+        # download youtube video
         download = subprocess.run(
-            ["yt-dlp", "-f", "mp4", "-o", video_file, video_url],
+            ["python", "-m", "yt_dlp", "-f", "mp4", "-o", video_file, video_url],
             capture_output=True,
             text=True
         )
@@ -57,8 +58,8 @@ def generate_clips(data: VideoRequest):
 
         clips = []
 
+        # create 3 clips
         for i in range(3):
-
             start = i * 30
             clip_name = f"{CLIPS_DIR}/clip{i}_{video_id}.mp4"
 
