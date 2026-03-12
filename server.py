@@ -1,30 +1,17 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import subprocess
-import os
-import uuid
+from pydantic import BaseModel
 
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-CLIPS_DIR = "clips"
-os.makedirs(CLIPS_DIR, exist_ok=True)
-
-
-@app.get("/")
-def home():
-    return {"message": "Shortify backend running"}
+class VideoRequest(BaseModel):
+    url: str | None = None
+    youtube_url: str | None = None
 
 
 @app.post("/generate-clips")
-def generate_clips(url: str):
+def generate_clips(data: VideoRequest):
+
+    url = data.url or data.youtube_url
+
+    if not url:
+        return {"error": "No video URL provided"}
 
     video_id = str(uuid.uuid4())
     video_file = f"{video_id}.mp4"
