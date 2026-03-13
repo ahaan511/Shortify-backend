@@ -8,7 +8,7 @@ import uuid
 
 app = FastAPI()
 
-# Enable CORS so Lovable frontend can access API
+# Allow requests from Lovable
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,99 +36,61 @@ class VideoRequest(BaseModel):
 @app.post("/generate-clips")
 def generate_clips(data: VideoRequest):
 
-    try:
-        video_url = data.url or data.youtube_url
+    video_url = data.url or data.youtube_url
 
-        if not video_url:
-            return {"error": "No video URL provided"}
+    if not video_url:
+        return {"error": "No video URL provided"}
 
-        video_id = str(uuid.uuid4())
-        video_file = f"{video_id}.mp4"
+    video_id = str(uuid.uuid4())
+    video_file = f"{video_id}.mp4"
 
-        # Download video using yt-dlp with Android client (bypasses bot verification)
-        download = subprocess.run(
+    # Download video using yt-dlp
+    download = subprocess.run(
+        [
+            "python",
+            "-m",
+            "yt_dlp",
+            "--extractor-args",
+            "youtube:player_client=android",
+            "-f",
+            "mp4",
+            "-o",
+            video_file,
+            video_url,
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    if download.returncode != 0:
+        return {"error": "yt-dlp failed", "details": download.stderr}
+
+    clips = []
+
+    for i in range(3):
+        start = i * 30
+        clip_name = f"{CLIPS_DIR}/clip{i}_{video_id}.mp4"
+
+        cut = subprocess.run(
             [
-                "python",
-                "-m",
-                "yt_dlp",
-                "--extractor-args",
-                "youtube:player_client=android",
-                "--geo-bypass",
-                "--no-check-certificate",
-                "-f",
-                "mp4",
-                "-o",
+                "ffmpeg",
+                "-i",
                 video_file,
-                video_url
+                "-ss",
+                str(start),
+                "-t",
+                "30",
+                "-c",
+                "copy",
+                clip_name,
             ],
             capture_output=True,
-            text=True
+            text=True,
         )
 
-        if download.returncode != 0:
-            return {
-                "error": "yt-dlp failed",
-                "details": download.stderr
-            }
+        if cut.returncode != 0:
+            return {"error": "ffmpeg failed", "details": cut.stderr}
 
-        clips = []
+        clips.append(f"/clips/clip{i}_{video_id}.mp4")
 
-        # Create 3 clips (30 seconds each)
-        for i in range(3):
-
-            start = i * 30
-            clip_name = f"{CLIPS_DIR}/clip{i}_{video_id}.mp4"
-
-            cut = subprocess.run(
-                [
-                    "ffmpeg",
-                    "-i",
-                    video_file,
-                    "-ss",
-                    str(start),
-                    "-t",
-                    "30",
-                    "-c",
-                    "copy",
-                    clip_name
-                ],
-                capture_output=True,
-                text=True
-            )
-
-            if cut.returncode != 0:
-                return {
-                    "error": "ffmpeg failed",
-                    "details": cut.stderr
-                }
-
-            clips.append(f"/clips/clip{i}_{video_id}.mp4")
-
-        return {"clips": clips}
-
-    except Exception as e:
-        return {"error": str(e)}                [
-                    "ffmpeg",
-                    "-i",
-                    video_file,
-                    "-ss",
-                    str(start),
-                    "-t",
-                    "30",
-                    "-c",
-                    "copy",
-                    clip_name
-                ],
-                capture_output=True,
-                text=True
-            )
-
-            if cut.returncode != 0:
-                return {"error": "ffmpeg failed", "details": cut.stderr}
-
-            clips.append(f"/clips/clip{i}_{video_id}.mp4")
-
-        return {"clips": clips}
-
-    except Exception as e:
-        return {"error": str(e)}
+    return {"clips": clips}
