@@ -44,16 +44,19 @@ def generate_clips(data: VideoRequest):
     video_id = str(uuid.uuid4())
     video_file = f"{video_id}.mp4"
 
-    # Download video using yt-dlp
+    # Download video using yt-dlp (more reliable format selection)
     download = subprocess.run(
         [
             "python",
             "-m",
             "yt_dlp",
-            "--extractor-args",
-            "youtube:player_client=android",
             "-f",
+            "bestvideo+bestaudio/best",
+            "--merge-output-format",
             "mp4",
+            "--extractor-args",
+            "youtube:player_client=android,web",
+            "--no-playlist",
             "-o",
             video_file,
             video_url,
