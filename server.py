@@ -67,11 +67,12 @@ def generate_clips(data: VideoRequest):
 
     clips = []
 
-clip_length = 30
-max_clips = 15
+    clip_length = 30
+    max_clips = 15
 
-for i in range(max_clips):
-    start = i * clip_length
+    for i in range(max_clips):
+
+        start = i * clip_length
         clip_name = f"{CLIPS_DIR}/clip{i}_{video_id}.mp4"
 
         cut = subprocess.run(
@@ -82,7 +83,7 @@ for i in range(max_clips):
                 "-ss",
                 str(start),
                 "-t",
-                "30",
+                str(clip_length),
                 "-c",
                 "copy",
                 clip_name,
