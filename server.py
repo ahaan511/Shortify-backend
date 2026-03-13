@@ -68,7 +68,7 @@ def generate_clips(data: VideoRequest):
     clips = []
 
     clip_length = 30
-    max_clips = 15
+    max_clips = 10
 
     for i in range(max_clips):
 
